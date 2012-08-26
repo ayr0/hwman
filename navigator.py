@@ -1,5 +1,6 @@
 from .models import Duable
 from datetime import datetime as dt
+from dateutil.relativedelta import relativedelta
 
 class Navigator(object):
     """ 
@@ -25,7 +26,7 @@ class Navigator(object):
         self.order_by = Duable.id
 
         #query parameters
-        self.due_within = (3, 'days')
+        self.due_within = '3 days'
         self.name_like = '%'
         self.course_course = '' #to follow the conventions of byu, the course's
                                 #name is simply 'course'
@@ -55,34 +56,36 @@ class Navigator(object):
             else:
                 self.duable = None
 
+    def _base_query(self):
+        return self.session.query(Duable).order_by(self.order_by)
+
     def _query_all(self):
         """
         Populate all duables.
         """
-        query = self.session.query(Duable).order_by(self.order_by)
-        self._process_query(query) 
+        self._process_query(self._base_query()) 
 
     def _query_due(self):
         """
         Populate duables within due parameters.
         """
-        query = self.session.query(Duable).order_by(self.order_by)
-        query = query.filter(getattr(Duable.date_due-dt.now(),
-                             self.due_within[1]) < self.due_within[0])
+        vals = self.due_within.split()
+        param = {vals[1] : int(vals[0])}
+        threshold = dt.now() + relativedelta(**param)
+        query = self._base_query().filter(Duable.date_due < threshold)
         self._process_query(query)
 
     def _query_name(self):
         """
         Populate duables with name like the parameter.
         """
-        query = self.session.query(Duable).order_by(self.order_by)
-        query = query.filter(Duable.name.like(self.name_like))
+        query = self._base_query().filter(Duable.name.like(self.name_like))
         self._process_query(query)
 
     def _query_course(self):
         """
         Populate duables whose course has the specified value in field.
         """
-        query = self.session.query(Duable).order_by(self.order_by)
-        query = query.filter(Duable.course.course == self.course_course)
+        query = self._base_query().filter(Duable.course.has(
+                                          course=self.course_course))
         self._process_query(query)

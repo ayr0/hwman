@@ -49,7 +49,7 @@ class Duable(Base):
             raise ValueError('Must give name.')
         self.name = name
 
-    def __repr(self):
+    def __repr__(self):
         return "<Duable('%s')>" % (self.name)
 
 class Course(Base):
@@ -66,5 +66,5 @@ class Course(Base):
     bldg = Column(String, nullable=False)
     instructor = Column(String, nullable=False)
 
-    def __repr(self):
+    def __repr__(self):
         return "<Course('%s')>" % (self.course)
