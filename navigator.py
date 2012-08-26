@@ -1,4 +1,4 @@
-from .models import Duable
+from .models import Duable, Duable_sorts
 from .views import *
 
 class Navigator(object):
@@ -21,13 +21,15 @@ class Navigator(object):
         """
         self.session = session
 
-        self.duable = None
         self.duables = []
+        self.duable = None
 
         self.views = [View_all(), View_due(), View_name(), View_course()]
         self.view = self.views[0]
     
-        self.order_by = Duable.id
+        self.order_bys = Duable_sorts
+        self.order_by = self.order_bys[0]
+
         self.show_done = True
 
     def inc_duable(self, inc=1):
@@ -36,12 +38,18 @@ class Navigator(object):
         newi = (self.duables.index(self.duable)+inc)%(len(self.duables))
         self.duable = self.duables[newi]
 
-    def inc_views(self, inc=1):
+    def inc_view(self, inc=1):
         if not self.view or not self.views:
             return
         newi = (self.views.index(self.view)+inc)%(len(self.views)) 
         self.view = self.views[newi]
 
+    def inc_order_bys(self, inc=1):
+        if not self.order_by or not self.order_bys:
+            return
+        newi = (self.order_bys.index(self.order_by)+inc)%(len(self.order_bys))
+        self.order_by = self.order_bys[newi]
+            
     def _process_query(self, query):
         """
         Put the results of the query into the interface.
