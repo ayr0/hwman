@@ -1,3 +1,7 @@
+from .models import Duable
+from datetime import datetime as dt
+from dateutil.relativedelta import relativedelta
+
 class View(dict):
     """
     A view is a filter on all Duables, and can be parameter based. All
@@ -10,6 +14,9 @@ class View(dict):
     def filter(self, query):
         raise NotImplementedError()
 
+    def __repr__(self):
+        return '<View {}({})>'.format(self.name, super(View,self).__repr__())
+
 class View_all(View):
     def __init__(self):
         """
@@ -21,6 +28,11 @@ class View_all(View):
     def filter(self, query):
         return query
 
+    def __bool__(self):
+        return True
+    __nonzero__ = __bool__
+
+
 class View_due(View):
     def __init__(self, within='3 days'): 
         """
@@ -30,13 +42,13 @@ class View_due(View):
         self['within'] = within
 
     def filter(self, query):
-        vals = self.['within'].split()
+        vals = self['within'].split()
         param = {vals[1] : int(vals[0])}
         threshold = dt.now() + relativedelta(**param)
         return query.filter(Duable.date_due < threshold)
 
 class View_name(View):
-    def __init__(self, like='%')
+    def __init__(self, like='%'):
         """
         Populate duables with name like the parameter.
         """
