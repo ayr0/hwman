@@ -1,6 +1,7 @@
 from sqlalchemy import (
     Column,
     ForeignKey,
+    create_engine,
     )
 
 from sqlalchemy.types import (
@@ -19,7 +20,6 @@ from sqlalchemy.orm import (
     sessionmaker,
     )
 
-from sqlalchemy import sessionmaker
 from datetime import datetime
 
 DATABASE = 'hw.db'
@@ -36,6 +36,10 @@ class Duable(Base):
     date_open = Column(DateTime) #if there is a window in which it can be done
     date_due = Column(DateTime)
     done = Column(Boolean)
+    course_id = Column(Integer, ForeignKey('courses.id'), nullable=False)
+    course = relationship('Course', backref=backref('duables',
+                          cascade='all, delete, delete-orphan',
+                          order_by=date_due)
 
     def __init__(name):
         if not name:
@@ -44,3 +48,20 @@ class Duable(Base):
 
     def __repr(self):
         return "<Duable('%s')>" % (self.name)
+
+class Course(Base):
+    __tablename__ = 'courses'
+
+    id = Column(Integer, primary_key=True)
+    course = Column(String, nullable=False)
+    course_title = Column(String, nullable=False)
+    sec = Column(String)
+    hrs = Column(String)
+    class_period = Column(String, nullable=False)
+    days = Column(String, nullable=False)
+    room = Column(String, nullable=False)
+    bldg = Column(String, nullable=False)
+    instructor = Column(String, nullable=False)
+
+    def __repr(self):
+        return "<Course('%s')>" % (self.course)
