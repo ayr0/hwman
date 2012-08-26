@@ -22,10 +22,12 @@ from sqlalchemy.orm import (
 
 from datetime import datetime
 
-DATABASE = 'hw.db'
+import os
+
+DATABASE = os.path.join(os.path.dirname(__file__), 'hw.db')
 engine = create_engine('sqlite:///%s' % (DATABASE), echo=True)
 Session = sessionmaker(bind=engine)
-Base = declarative_base()
+Base = declarative_base(bind=engine)
 
 class Duable(Base):
     __tablename__ = 'duables'
@@ -33,13 +35,14 @@ class Duable(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     description = Column(String)
+    type = Column(String)
     date_open = Column(DateTime) #if there is a window in which it can be done
     date_due = Column(DateTime)
     done = Column(Boolean)
     course_id = Column(Integer, ForeignKey('courses.id'), nullable=False)
     course = relationship('Course', backref=backref('duables',
                           cascade='all, delete, delete-orphan',
-                          order_by=date_due)
+                          order_by=date_due))
 
     def __init__(name):
         if not name:
