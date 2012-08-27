@@ -66,6 +66,7 @@ class Painter(object):
                     self.nav.query()
         elif ch == ord('x'):
             self.nav.duable.done = not self.nav.duable.done
+            self.nav.query()
         elif ch == ord('D'):
             self.nav.show_done = not self.nav.show_done
             self.nav.query()
@@ -141,48 +142,49 @@ class Painter(object):
                 scr.addstr('{} : {}  '.format(item[0],item[1]))
         scr.addstr('\n\n')
 
-        #description
-        scr.addstr('description : {}'.format(self.nav.duable.description))
-        scr.addstr('\n\n')
+        if self.nav.duable:
+            #description
+            scr.addstr('description : {}'.format(self.nav.duable.description))
+            scr.addstr('\n\n')
 
-        #duable table
-        row = '  {:<20} {:<10} {:<10} {:<10}\n'
-        scr.addstr(row.format('name','type','due','course'))
-        scr.addstr(row.format('----','----','---','------'))
-        if self.nav.duables:
-            for duable in self.nav.duables:
-                style = 0
-                if duable.done:
-                    style += curses.color_pair(1)
-                elif duable.done is None:
-                    style += curses.color_pair(2)
-                if duable is self.nav.duable:
-                    style += curses.A_REVERSE
-                
-                if duable.name:
-                    name = duable.name[:20]
-                else:
-                    name = '<none>'
-                if duable.type:
-                    type_ = duable.type[:10]
-                else:
-                    type_ = '<none>'
-                if type(duable.due) is datetime:
-                    fdate = datetime.strftime(duable.due, '%d-%b-%y')
-                elif duable.due:
-                    fdate = duable.due[:10]
-                else:
-                    fdate = '<none>'
-                if duable.course and duable.course.course:
-                    course = duable.course.course[:10]
-                else:
-                    course = '<none>'
+            #duable table
+            row = '  {:<20} {:<10} {:<10} {:<10}\n'
+            scr.addstr(row.format('name','type','due','course'))
+            scr.addstr(row.format('----','----','---','------'))
+            if self.nav.duables:
+                for duable in self.nav.duables:
+                    style = 0
+                    if duable.done:
+                        style += curses.color_pair(1)
+                    elif duable.done is None:
+                        style += curses.color_pair(2)
+                    if duable is self.nav.duable:
+                        style += curses.A_REVERSE
+                    
+                    if duable.name:
+                        name = duable.name[:20]
+                    else:
+                        name = '<none>'
+                    if duable.type:
+                        type_ = duable.type[:10]
+                    else:
+                        type_ = '<none>'
+                    if type(duable.due) is datetime:
+                        fdate = datetime.strftime(duable.due, '%d-%b-%y')
+                    elif duable.due:
+                        fdate = duable.due[:10]
+                    else:
+                        fdate = '<none>'
+                    if duable.course and duable.course.course:
+                        course = duable.course.course[:10]
+                    else:
+                        course = '<none>'
 
-                scr.addstr(row.format(name, 
-                           type_,
-                           fdate,
-                           course,
-                           ), style)
+                    scr.addstr(row.format(name, 
+                               type_,
+                               fdate,
+                               course,
+                               ), style)
 
         #message
         y = scr.getmaxyx()[0]-1
