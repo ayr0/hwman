@@ -45,7 +45,7 @@ class View_due(View):
         vals = self['within'].split()
         param = {vals[1] : int(vals[0])}
         threshold = dt.now() + relativedelta(**param)
-        return query.filter(Duable.date_due < threshold)
+        return query.filter(Duable.due < threshold)
 
 class View_name(View):
     def __init__(self, like='%'):

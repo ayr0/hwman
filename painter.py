@@ -1,6 +1,7 @@
 import curses
 from datetime import datetime
-from .models import Duable
+from .models import Duable, Course, Session
+from .datetimehelp import get_datetime
 
 class Painter(object):
     """
@@ -19,6 +20,7 @@ class Painter(object):
             database.
         """
         self.nav = navigator
+        self.message = ''
         self.quit = False
 
         
@@ -29,6 +31,7 @@ class Painter(object):
         curses.curs_set(0)
         curses.use_default_colors()
         curses.init_pair(1, curses.COLOR_RED, -1)
+        curses.init_pair(2, curses.COLOR_MAGENTA, -1)
         self.nav.query()
         self.paint(stdscr)
         while not self.quit:
@@ -68,10 +71,49 @@ class Painter(object):
             self.nav.query()
         elif ch == ord('N'):
             new = Duable('new')
+            new.done = False
             self.nav.session.add(new)
             self.nav.duable = new
             self.nav.view = self.nav.views[0]
             self.nav.query()
+        elif ch == ord('S'):
+            self.nav.session.commit()
+            self.message = 'Saved.'
+        elif ch == ord('R'):
+            self.nav.session.rollback()
+            self.nav.query()
+            self.message = 'Rolled back.'
+        elif ch == ord('X'):
+            to_delete = self.nav.duable
+            self.nav.inc_duable()
+            self.nav.session.delete(to_delete)
+            self.nav.query()
+        elif ch == ord('n'):
+            new_name = self.get_str(scr, 'name : ')
+            if new_name:
+                self.nav.duable.name = new_name
+        elif ch == ord('t'):
+            new_type = self.get_str(scr, 'type : ')
+            if new_type:
+                self.nav.duable.type = new_type
+        elif ch == ord('d'):
+            new_due = self.get_str(scr, 'due : ')
+            if new_due:
+                try:
+                    new_due = get_datetime(new_due)
+                    self.nav.duable.due = new_due
+                except ValueError as e:
+                    self.message = str(e)
+        elif ch == ord('c'):
+            new_course = self.get_str(scr, 'course : ')
+            try:
+                new_course = self.nav.session.query(Course).filter(
+                              Course.course == new_course).one()
+                self.nav.duable.course = new_course
+            except Exception as e:
+                self.message = e.__repr__()
+            except BaseException as e:
+                self.message = e.__repr__()
         else:
             pass
 
@@ -109,27 +151,51 @@ class Painter(object):
         scr.addstr(row.format('----','----','---','------'))
         if self.nav.duables:
             for duable in self.nav.duables:
-                if type(duable.date_due) is datetime:
-                    fdate = datetime.strftime(duable.date_due, '%d-%b-%y')
-                else:
-                    fdate = duable.date_due
                 style = 0
                 if duable.done:
                     style += curses.color_pair(1)
+                elif duable.done is None:
+                    style += curses.color_pair(2)
                 if duable is self.nav.duable:
                     style += curses.A_REVERSE
-                scr.addstr(row.format(duable.name[:20], 
-                           duable.type[:10],
-                           fdate[:10],
-                           duable.course.course[:10],
+                
+                if duable.name:
+                    name = duable.name[:20]
+                else:
+                    name = '<none>'
+                if duable.type:
+                    type_ = duable.type[:10]
+                else:
+                    type_ = '<none>'
+                if type(duable.due) is datetime:
+                    fdate = datetime.strftime(duable.due, '%d-%b-%y')
+                elif duable.due:
+                    fdate = duable.due[:10]
+                else:
+                    fdate = '<none>'
+                if duable.course and duable.course.course:
+                    course = duable.course.course[:10]
+                else:
+                    course = '<none>'
+
+                scr.addstr(row.format(name, 
+                           type_,
+                           fdate,
+                           course,
                            ), style)
+
+        #message
+        y = scr.getmaxyx()[0]-1
+        scr.move(y, 0)
+        scr.addstr(self.message)
+
         scr.refresh()
 
     def get_str(self, scr, query=''):
         s = None
         curses.echo()
         try:
-            y = scr.getmaxyx()[0]-1
+            y = scr.getmaxyx()[0]-3
             scr.move(y, 0)
             scr.addstr(query)
             s = scr.getstr(y, len(query)+1)

@@ -20,8 +20,6 @@ from sqlalchemy.orm import (
     sessionmaker,
     )
 
-from datetime import datetime
-
 import os
 
 DATABASE = os.path.join(os.path.dirname(__file__), 'hw.db')
@@ -42,10 +40,10 @@ class Duable(Base):
     course_id = Column(Integer, ForeignKey('courses.id'))
     course = relationship('Course', backref=backref('duables',
                           cascade='all, delete, delete-orphan',
-                          order_by=date_due),
+                          order_by=due),
                           )
 
-    def __init__(self, name, course_id):
+    def __init__(self, name):
         if not name:
             raise ValueError('Must give name.')
         self.name = name
@@ -72,6 +70,6 @@ class Course(Base):
 
 Duable_sorts = [Duable.name, 
                 Duable.type, 
-                Duable.date_due,
+                Duable.due,
                 Duable.course,
                 ]
