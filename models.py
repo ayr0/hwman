@@ -33,27 +33,25 @@ class Duable(Base):
     __tablename__ = 'duables'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False)
+    name = Column(String)
     description = Column(String)
     type = Column(String)
-    date_open = Column(DateTime) #if there is a window in which it can be done 
-                                 #CHANGE to open
-    date_due = Column(DateTime) #CHANGE to due
+    open = Column(DateTime) #if there is a window in which it can be done 
+    due = Column(DateTime)
     done = Column(Boolean)
-    course_id = Column(Integer, ForeignKey('courses.id'), nullable=False)
+    course_id = Column(Integer, ForeignKey('courses.id'))
     course = relationship('Course', backref=backref('duables',
                           cascade='all, delete, delete-orphan',
-                          order_by=date_due))
+                          order_by=date_due),
+                          )
 
-    def __init__(name):
+    def __init__(self, name, course_id):
         if not name:
             raise ValueError('Must give name.')
         self.name = name
 
     def __repr__(self):
         return "<Duable('%s')>" % (self.name)
-
-Duable_sorts = [Duable.id, Duable.name, Duable.date_due]
 
 class Course(Base):
     __tablename__ = 'courses'
@@ -71,3 +69,9 @@ class Course(Base):
 
     def __repr__(self):
         return "<Course('%s')>" % (self.course)
+
+Duable_sorts = [Duable.name, 
+                Duable.type, 
+                Duable.date_due,
+                Duable.course,
+                ]

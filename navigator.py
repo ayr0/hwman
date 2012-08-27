@@ -58,8 +58,6 @@ class Navigator(object):
         if self.duable not in self.duables:
             if self.duables:
                 self.duable = self.duables[0]
-            else:
-                self.duable = None
 
     def _base_query(self):
         if self.show_done:
