@@ -34,7 +34,7 @@ class Duable(Base):
     name = Column(String)
     description = Column(String)
     type = Column(String)
-    open = Column(DateTime) #if there is a window in which it can be done 
+    post = Column(DateTime)
     due = Column(DateTime)
     done = Column(Boolean)
     course_id = Column(Integer, ForeignKey('courses.id'))
@@ -68,8 +68,5 @@ class Course(Base):
     def __repr__(self):
         return "<Course('%s')>" % (self.course)
 
-Duable_sorts = [Duable.name, 
-                Duable.type, 
-                Duable.due,
-                Duable.course,
-                ]
+    def __str__(self):
+        return self.course

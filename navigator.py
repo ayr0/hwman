@@ -1,5 +1,6 @@
-from .models import Duable, Duable_sorts
+from .models import Duable
 from .views import *
+from datetime import datetime
 
 class Navigator(object):
     """ 
@@ -24,13 +25,25 @@ class Navigator(object):
         self.duables = []
         self.duable = None
 
-        self.views = [View_all(), View_due(), View_name(), View_course()]
+        self.views = [View_all(), 
+                      View_due(), 
+                      View_name(), 
+                      View_course(),
+                      ]
         self.view = self.views[0]
     
-        self.order_bys = Duable_sorts
-        self.order_by = self.order_bys[0]
-
         self.show_done = True
+        self.show_all_post = True
+
+        self.cols = [Duable.name, 
+                     Duable.type, 
+                     Duable.post,
+                     Duable.due,
+                     Duable.course,
+                     ]
+        self.col = self.cols[0]
+        self.cols_show = [True]*len(self.cols)
+        self.cols_len = [20, 10, 10, 10, 10]
 
     def inc_duable(self, inc=1):
         if not self.duable or not self.duables:
@@ -44,12 +57,19 @@ class Navigator(object):
         newi = (self.views.index(self.view)+inc)%(len(self.views)) 
         self.view = self.views[newi]
 
-    def inc_order_bys(self, inc=1):
-        if not self.order_by or not self.order_bys:
+    def inc_vcols(self, inc=1):
+        if not self.col or not self.cols:
             return
-        newi = (self.order_bys.index(self.order_by)+inc)%(len(self.order_bys))
-        self.order_by = self.order_bys[newi]
+        vcols = self.vcols()
+        newi = (vcols.index(self.col)+inc)%(len(vcols))
+        self.col = vcols[newi]
             
+    def vcols(self):
+        """
+        Return list of v(isible) col(umn)s
+        """
+        return [col for col,show in zip(self.cols,self.cols_show) if show]
+
     def _process_query(self, query):
         """
         Put the results of the query into the interface.
@@ -60,11 +80,12 @@ class Navigator(object):
                 self.duable = self.duables[0]
 
     def _base_query(self):
-        if self.show_done:
-            return self.session.query(Duable).order_by(self.order_by)
-        else:
-            query = self.session.query(Duable).order_by(self.order_by)
-            return query.filter(Duable.done == False)
+        query = self.session.query(Duable).order_by(self.col)
+        if not self.show_done:
+            query = query.filter(Duable.done == False)
+        if not self.show_all_post:
+            query = query.filter(Duable.post < datetime.now())
+        return query
 
     def query(self):
         self._process_query(self.view.filter(self._base_query()))

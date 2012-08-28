@@ -32,6 +32,7 @@ class Painter(object):
         curses.use_default_colors()
         curses.init_pair(1, curses.COLOR_RED, -1)
         curses.init_pair(2, curses.COLOR_MAGENTA, -1)
+        curses.init_pair(3, curses.COLOR_CYAN, -1)
         self.nav.query()
         self.paint(stdscr)
         while not self.quit:
@@ -39,6 +40,7 @@ class Painter(object):
             self.paint(stdscr)
 
     def input(self, scr):
+        self.message = ''
         ch = scr.getch()
         if ch == ord('q'):
             self.quit = True
@@ -53,10 +55,10 @@ class Painter(object):
             self.nav.inc_view(-1)
             self.nav.query()
         elif ch == ord('o'):
-            self.nav.inc_order_bys()
+            self.nav.inc_vcols()
             self.nav.query()
         elif ch == ord('O'):
-            self.nav.inc_order_bys(-1)
+            self.nav.inc_vcols(-1)
             self.nav.query()
         elif ch == ord('e'):
             for item in self.nav.view.items():
@@ -69,6 +71,9 @@ class Painter(object):
             self.nav.query()
         elif ch == ord('D'):
             self.nav.show_done = not self.nav.show_done
+            self.nav.query()
+        elif ch == ord('P'):
+            self.nav.show_all_post = not self.nav.show_all_post
             self.nav.query()
         elif ch == ord('N'):
             new = Duable('new')
@@ -97,6 +102,14 @@ class Painter(object):
             new_type = self.get_str(scr, 'type : ')
             if new_type:
                 self.nav.duable.type = new_type
+        elif ch == ord('p'):
+            new_post = self.get_str(scr, 'post : ')
+            if new_post:
+                try:
+                    new_post= get_datetime(new_post)
+                    self.nav.duable.post = new_post
+                except ValueError as e:
+                    self.message = str(e)
         elif ch == ord('d'):
             new_due = self.get_str(scr, 'due : ')
             if new_due:
@@ -115,6 +128,26 @@ class Painter(object):
                 self.message = e.__repr__()
             except BaseException as e:
                 self.message = e.__repr__()
+        elif ch == ord('s'):
+            new_desc = self.get_str(scr, 'description : ')
+            if new_desc:
+                self.nav.duable.description = new_desc
+        elif ch == ord('1'):
+            if self.nav.col is self.nav.cols[0]:
+                self.nav.inc_vcols()
+            self.nav.cols_show[0] = not self.nav.cols_show[0]
+        elif ch == ord('2'):
+            if self.nav.col is self.nav.cols[1]:
+                self.nav.inc_vcols()
+            self.nav.cols_show[1] = not self.nav.cols_show[1]
+        elif ch == ord('3'):
+            if self.nav.col is self.nav.cols[2]:
+                self.nav.inc_vcols()
+            self.nav.cols_show[2] = not self.nav.cols_show[2]
+        elif ch == ord('4'):
+            if self.nav.col is self.nav.cols[3]:
+                self.nav.inc_vcols()
+            self.nav.cols_show[3] = not self.nav.cols_show[3]
         else:
             pass
 
@@ -132,25 +165,33 @@ class Painter(object):
             scr.addstr('{}'.format(view.name), style)
         scr.addstr('\n\n')
 
-        #order_by
-        scr.addstr('order by : {}'.format(self.nav.order_by))
-        scr.addstr('\n\n')
-
-
         #view items
         for item in self.nav.view.items():
                 scr.addstr('{} : {}  '.format(item[0],item[1]))
         scr.addstr('\n\n')
 
-        if self.nav.duable:
+        if self.nav.duable and any(self.nav.cols_show):
             #description
-            scr.addstr('description : {}'.format(self.nav.duable.description))
+            if self.nav.duable.description:
+                desc = self.nav.duable.description
+            else:
+                desc = '<none>'
+            scr.addstr('description : {}'.format(desc))
             scr.addstr('\n\n')
 
             #duable table
-            row = '  {:<20} {:<10} {:<10} {:<10}\n'
-            scr.addstr(row.format('name','type','due','course'))
-            scr.addstr(row.format('----','----','---','------'))
+            vcols = self.nav.vcols()
+            names = [col.property.key for col in vcols]
+            row = ('  ' + '{{{{{{}}:<{}}}}}'*len(vcols) + '\n').format(*self.nav.cols_len).format(*names)
+            #bars = ['-'*len(name) for name in names]
+            scr.addstr('  ')
+            for col,len_ in zip(vcols,self.nav.cols_len):
+                style = 0
+                if col is self.nav.col:
+                    style += curses.color_pair(3)
+                scr.addstr('{{:<{}}}'.format(len_).format(col.property.key),style)
+            scr.addstr('\n')
+            #scr.addstr(row.format(*bars))
             if self.nav.duables:
                 for duable in self.nav.duables:
                     style = 0
@@ -170,20 +211,26 @@ class Painter(object):
                     else:
                         type_ = '<none>'
                     if type(duable.due) is datetime:
-                        fdate = datetime.strftime(duable.due, '%d-%b-%y')
+                        fdue = datetime.strftime(duable.due, '%d-%b-%y')
                     elif duable.due:
-                        fdate = duable.due[:10]
+                        fdue = duable.due[:10]
                     else:
-                        fdate = '<none>'
+                        fdue = '<none>'
+                    if type(duable.post) is datetime:
+                        fpost = datetime.strftime(duable.post, '%d-%b-%y')
+                    elif duable.post:
+                        fpost = duable.post[:10]
+                    else:
+                        fpost = '<none>'
                     if duable.course and duable.course.course:
                         course = duable.course.course[:10]
                     else:
                         course = '<none>'
-
-                    scr.addstr(row.format(name, 
-                               type_,
-                               fdate,
-                               course,
+                    scr.addstr(row.format(name=name, 
+                               type=type_,
+                               post=fpost, 
+                               due=fdue,
+                               course=course,
                                ), style)
 
         #message
