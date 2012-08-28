@@ -22,7 +22,7 @@ class Painter(object):
         self.nav = navigator
         self.message = ''
         self.quit = False
-
+        self._slice_start = 0
         
     def run(self):
         curses.wrapper(self._run)
@@ -98,16 +98,19 @@ class Painter(object):
             new_name = self.get_str(scr, 'name : ')
             if new_name:
                 self.nav.duable.name = new_name
+                self.nav.query()
         elif ch == ord('t'):
             new_type = self.get_str(scr, 'type : ')
             if new_type:
                 self.nav.duable.type = new_type
+                self.nav.query()
         elif ch == ord('p'):
             new_post = self.get_str(scr, 'post : ')
             if new_post:
                 try:
                     new_post= get_datetime(new_post)
                     self.nav.duable.post = new_post
+                    self.nav.query()
                 except ValueError as e:
                     self.message = str(e)
         elif ch == ord('d'):
@@ -116,6 +119,7 @@ class Painter(object):
                 try:
                     new_due = get_datetime(new_due)
                     self.nav.duable.due = new_due
+                    self.nav.query()
                 except ValueError as e:
                     self.message = str(e)
         elif ch == ord('c'):
@@ -124,6 +128,7 @@ class Painter(object):
                 new_course = self.nav.session.query(Course).filter(
                               Course.course == new_course).one()
                 self.nav.duable.course = new_course
+                self.nav.query()
             except Exception as e:
                 self.message = e.__repr__()
             except BaseException as e:
@@ -132,22 +137,37 @@ class Painter(object):
             new_desc = self.get_str(scr, 'description : ')
             if new_desc:
                 self.nav.duable.description = new_desc
+                self.nav.query()
         elif ch == ord('1'):
-            if self.nav.col is self.nav.cols[0]:
+            if not self.nav.cols_show[0]:
+                self.nav.col = self.nav.cols[0]
+            elif self.nav.col is self.nav.cols[0]:
                 self.nav.inc_vcols()
             self.nav.cols_show[0] = not self.nav.cols_show[0]
         elif ch == ord('2'):
-            if self.nav.col is self.nav.cols[1]:
+            if not self.nav.cols_show[1]:
+                self.nav.col = self.nav.cols[1]
+            elif self.nav.col is self.nav.cols[1]:
                 self.nav.inc_vcols()
             self.nav.cols_show[1] = not self.nav.cols_show[1]
         elif ch == ord('3'):
-            if self.nav.col is self.nav.cols[2]:
+            if not self.nav.cols_show[2]:
+                self.nav.col = self.nav.cols[2]
+            elif self.nav.col is self.nav.cols[2]:
                 self.nav.inc_vcols()
             self.nav.cols_show[2] = not self.nav.cols_show[2]
         elif ch == ord('4'):
-            if self.nav.col is self.nav.cols[3]:
+            if not self.nav.cols_show[3]:
+                self.nav.col = self.nav.cols[3]
+            elif self.nav.col is self.nav.cols[3]:
                 self.nav.inc_vcols()
             self.nav.cols_show[3] = not self.nav.cols_show[3]
+        elif ch == ord('5'):
+            if not self.nav.cols_show[4]:
+                self.nav.col = self.nav.cols[4]
+            elif self.nav.col is self.nav.cols[4]:
+                self.nav.inc_vcols()
+            self.nav.cols_show[4] = not self.nav.cols_show[4]
         else:
             pass
 
@@ -163,12 +183,32 @@ class Painter(object):
                 style += curses.A_REVERSE
             scr.addstr(' ')
             scr.addstr('{}'.format(view.name), style)
-        scr.addstr('\n\n')
+
+            #nums
+        scr.addstr(' ')
+        for bool_,col_num in zip(self.nav.cols_show,range(1,
+                                 len(self.nav.cols_show)+1)):
+            style = 0
+            if bool_:
+                style += curses.color_pair(3)
+            scr.addstr('{}'.format(col_num),style)
+    
+            #bools
+        style = 0
+        if self.nav.show_done:
+            style += curses.color_pair(3)
+        scr.addstr(' DONE',style)
+        style = 0
+        if self.nav.show_all_post:
+            style += curses.color_pair(3)
+        scr.addstr(' POST',style)
+
+        scr.addstr('\n')
 
         #view items
         for item in self.nav.view.items():
                 scr.addstr('{} : {}  '.format(item[0],item[1]))
-        scr.addstr('\n\n')
+        scr.addstr('\n')
 
         if self.nav.duable and any(self.nav.cols_show):
             #description
@@ -176,8 +216,12 @@ class Painter(object):
                 desc = self.nav.duable.description
             else:
                 desc = '<none>'
-            scr.addstr('description : {}'.format(desc))
-            scr.addstr('\n\n')
+            if self.nav.duable.name:
+                name = self.nav.duable.name
+            else:
+                name = '<none>'
+            scr.addstr('name : {}\n'.format(name))
+            scr.addstr('description : {}\n\n'.format(desc))
 
             #duable table
             vcols = self.nav.vcols()
@@ -193,7 +237,8 @@ class Painter(object):
             scr.addstr('\n')
             #scr.addstr(row.format(*bars))
             if self.nav.duables:
-                for duable in self.nav.duables:
+                self._make_slice(scr)
+                for duable in self.nav.duables[self._slice_start:self._slice_end]:
                     style = 0
                     if duable.done:
                         style += curses.color_pair(1)
@@ -203,7 +248,7 @@ class Painter(object):
                         style += curses.A_REVERSE
                     
                     if duable.name:
-                        name = duable.name[:20]
+                        name = duable.name[:self.nav.cols_len[0]-1]
                     else:
                         name = '<none>'
                     if duable.type:
@@ -253,3 +298,20 @@ class Painter(object):
         finally:
             curses.noecho()
         return s
+
+    def _make_slice(self, scr, ignore=9):
+        """
+        Determine which section of the list to display.
+        """
+        self._slice_len = min(scr.getmaxyx()[0]-ignore,len(self.nav.duables))
+        di = self.nav.duables.index(self.nav.duable)
+        while di - self._slice_start < 2:
+            if self._slice_start == 0:
+                break
+            self._slice_start -= 1
+        self._slice_end = self._slice_start + self._slice_len
+        while self._slice_end - 1 - di < 2:
+            if self._slice_end == len(self.nav.duables):
+                break
+            self._slice_start += 1
+            self._slice_end = self._slice_start + self._slice_len

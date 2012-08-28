@@ -43,7 +43,7 @@ class Navigator(object):
                      ]
         self.col = self.cols[0]
         self.cols_show = [True]*len(self.cols)
-        self.cols_len = [20, 10, 10, 10, 10]
+        self.cols_len = [10, 10, 10, 10, 10]
 
     def inc_duable(self, inc=1):
         if not self.duable or not self.duables:
@@ -58,9 +58,9 @@ class Navigator(object):
         self.view = self.views[newi]
 
     def inc_vcols(self, inc=1):
-        if not self.col or not self.cols:
-            return
         vcols = self.vcols()
+        if not self.col or not vcols:
+            return
         newi = (vcols.index(self.col)+inc)%(len(vcols))
         self.col = vcols[newi]
             
