@@ -289,7 +289,7 @@ class Painter(object):
         s = None
         curses.echo()
         try:
-            y = scr.getmaxyx()[0]-3
+            y = scr.getmaxyx()[0]-2
             scr.move(y, 0)
             scr.addstr(query)
             s = scr.getstr(y, len(query)+1)

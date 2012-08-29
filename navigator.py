@@ -32,8 +32,8 @@ class Navigator(object):
                       ]
         self.view = self.views[0]
     
-        self.show_done = True
-        self.show_all_post = True
+        self.show_done = False 
+        self.show_all_post = False
 
         self.cols = [Duable.name, 
                      Duable.type, 
@@ -41,9 +41,9 @@ class Navigator(object):
                      Duable.due,
                      Duable.course,
                      ]
-        self.col = self.cols[0]
+        self.col = self.cols[3]
         self.cols_show = [True]*len(self.cols)
-        self.cols_len = [10, 10, 10, 10, 10]
+        self.cols_len = [30, 12, 12, 12, 12]
 
     def inc_duable(self, inc=1):
         if not self.duable or not self.duables:
