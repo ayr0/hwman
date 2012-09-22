@@ -1,4 +1,4 @@
-from .models import Duable
+from .models import Duable, Course
 from datetime import datetime as dt
 from dateutil.relativedelta import relativedelta
 
@@ -67,5 +67,9 @@ class View_course(View):
         self['course'] = course
 
     def filter(self, query):
-        return query.filter(Duable.course.has(
+        _query = query.filter(Duable.course.has(
                             course=self['course']))
+        if not _query.first(): 
+            _query = query.join(Course).filter(Course.course_title.like(
+                                   '%{}%'.format(self['course'])))
+        return _query

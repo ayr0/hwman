@@ -43,6 +43,7 @@ class Navigator(object):
                      ]
         self.col = self.cols[3]
         self.cols_show = [True]*len(self.cols)
+        self.cols_show[2] = False
         self.cols_len = [30, 12, 12, 12, 12]
 
     def inc_duable(self, inc=1):

@@ -81,6 +81,7 @@ class Painter(object):
             self.nav.session.add(new)
             self.nav.duable = new
             self.nav.view = self.nav.views[0]
+            self.nav.show_all_post = True
             self.nav.query()
         elif ch == ord('S'):
             self.nav.session.commit()
@@ -89,7 +90,7 @@ class Painter(object):
             self.nav.session.rollback()
             self.nav.query()
             self.message = 'Rolled back.'
-        elif ch == ord('X'):
+        elif ch == ord('!'):
             to_delete = self.nav.duable
             self.nav.inc_duable()
             self.nav.session.delete(to_delete)
@@ -124,15 +125,17 @@ class Painter(object):
                     self.message = str(e)
         elif ch == ord('c'):
             new_course = self.get_str(scr, 'course : ')
-            try:
-                new_course = self.nav.session.query(Course).filter(
-                              Course.course == new_course).one()
-                self.nav.duable.course = new_course
+            course = self.nav.session.query(Course).filter(
+                          Course.course == new_course).first()
+            if not course:
+                course = self.nav.session.query(Course).filter(
+                           Course.course_title.like('%{}%'.format(
+                           new_course))).first()
+            if course:
+                self.nav.duable.course = course
                 self.nav.query()
-            except Exception as e:
-                self.message = e.__repr__()
-            except BaseException as e:
-                self.message = e.__repr__()
+            else:
+                self.message = 'Cannot find course.'
         elif ch == ord('s'):
             new_desc = self.get_str(scr, 'description : ')
             if new_desc:
@@ -141,30 +144,35 @@ class Painter(object):
         elif ch == ord('1'):
             if not self.nav.cols_show[0]:
                 self.nav.col = self.nav.cols[0]
+                self.nav.query()
             elif self.nav.col is self.nav.cols[0]:
                 self.nav.inc_vcols()
             self.nav.cols_show[0] = not self.nav.cols_show[0]
         elif ch == ord('2'):
             if not self.nav.cols_show[1]:
                 self.nav.col = self.nav.cols[1]
+                self.nav.query()
             elif self.nav.col is self.nav.cols[1]:
                 self.nav.inc_vcols()
             self.nav.cols_show[1] = not self.nav.cols_show[1]
         elif ch == ord('3'):
             if not self.nav.cols_show[2]:
                 self.nav.col = self.nav.cols[2]
+                self.nav.query()
             elif self.nav.col is self.nav.cols[2]:
                 self.nav.inc_vcols()
             self.nav.cols_show[2] = not self.nav.cols_show[2]
         elif ch == ord('4'):
             if not self.nav.cols_show[3]:
                 self.nav.col = self.nav.cols[3]
+                self.nav.query()
             elif self.nav.col is self.nav.cols[3]:
                 self.nav.inc_vcols()
             self.nav.cols_show[3] = not self.nav.cols_show[3]
         elif ch == ord('5'):
             if not self.nav.cols_show[4]:
                 self.nav.col = self.nav.cols[4]
+                self.nav.query()
             elif self.nav.col is self.nav.cols[4]:
                 self.nav.inc_vcols()
             self.nav.cols_show[4] = not self.nav.cols_show[4]
@@ -195,11 +203,11 @@ class Painter(object):
     
             #bools
         style = 0
-        if self.nav.show_done:
+        if not self.nav.show_done:
             style += curses.color_pair(3)
         scr.addstr(' DONE',style)
         style = 0
-        if self.nav.show_all_post:
+        if not self.nav.show_all_post:
             style += curses.color_pair(3)
         scr.addstr(' POST',style)
 
@@ -220,8 +228,20 @@ class Painter(object):
                 name = self.nav.duable.name
             else:
                 name = '<none>'
+            if self.nav.duable.course:
+                course = self.nav.duable.course.course
+                title = self.nav.duable.course.course_title
+                instr = self.nav.duable.course.instructor
+            else:
+                course = '<none>'
+                title = ''
+                instr = ''
+            
+            scr.addstr('date : {}\n'.format(datetime.strftime(
+                                            datetime.now(),'%d-%b-%y')))
             scr.addstr('name : {}\n'.format(name))
-            scr.addstr('description : {}\n\n'.format(desc))
+            scr.addstr('description : {}\n'.format(desc))
+            scr.addstr('course : {} - {} - {}\n\n'.format(course, title, instr))
 
             #duable table
             vcols = self.nav.vcols()
@@ -299,7 +319,7 @@ class Painter(object):
             curses.noecho()
         return s
 
-    def _make_slice(self, scr, ignore=9):
+    def _make_slice(self, scr, ignore=11):
         """
         Determine which section of the list to display.
         """

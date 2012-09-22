@@ -22,7 +22,7 @@ from sqlalchemy.orm import (
 
 import os
 
-DATABASE = os.path.join(os.path.dirname(__file__), 'hw.db')
+DATABASE = os.path.expanduser('~/.hm.db')
 engine = create_engine('sqlite:///%s' % (DATABASE), echo=False)
 Session = sessionmaker(bind=engine)
 Base = declarative_base(bind=engine)
