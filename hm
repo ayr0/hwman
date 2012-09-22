@@ -1,0 +1,23 @@
+#!/Library/Frameworks/EPD64.framework/Versions/Current/bin/python
+
+from hwman import models, navigator, painter
+from shutil import copyfile
+from datetime import datetime
+import sys, os
+
+if len(sys.argv) == 1:
+    models.Base.metadata.create_all()
+    nav = navigator.Navigator(models.Session())
+    pai = painter.Painter(nav)
+    pai.run()
+else:
+    if sys.argv[1] == 'bac':
+        db_file = os.path.expanduser('~/.hm.db')
+        bac_file = os.path.expanduser('~/.hmdbbac/hm.db.{}'.format(
+                                      datetime.now()))
+        copyfile(db_file,bac_file)
+    else:
+        raise ValueError('Unknown command {}'.format(sys.argv[1]))
+
+
+
