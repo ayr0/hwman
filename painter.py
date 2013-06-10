@@ -33,6 +33,7 @@ class Painter(object):
         curses.init_pair(1, curses.COLOR_RED, -1)
         curses.init_pair(2, curses.COLOR_MAGENTA, -1)
         curses.init_pair(3, curses.COLOR_CYAN, -1)
+        curses.init_pair(4, curses.COLOR_GREEN, -1)
         self.nav.query()
         self.paint(stdscr)
         while not self.quit:
@@ -176,6 +177,8 @@ class Painter(object):
             elif self.nav.col is self.nav.cols[4]:
                 self.nav.inc_vcols()
             self.nav.cols_show[4] = not self.nav.cols_show[4]
+        elif ch == ord('m'):
+            self.nav.duable.marked = ~getattr(self.nav.duable,'marked',False)
         else:
             pass
 
@@ -264,6 +267,8 @@ class Painter(object):
                         style += curses.color_pair(1)
                     elif duable.done is None:
                         style += curses.color_pair(2)
+                    elif getattr(duable, 'marked', False):
+                        style += curses.color_pair(4)
                     if duable is self.nav.duable:
                         style += curses.A_REVERSE
                     
